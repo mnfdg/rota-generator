@@ -1,0 +1,146 @@
+employees = [
+    "Alice",
+    "Ben",
+    "Cara",
+    "Dan",
+    "Eve",
+    "Frank",
+]
+
+days = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+
+shifts = [
+    "early",
+    "late",
+]
+
+# Record "unavailable" days, as these should be fewer than "available" days.
+unavailable = {
+    "Alice": {"Wednesday"},
+    "Ben": {"Friday"},
+    "Cara": set(), # an empty set
+    "Dan": {"Monday"},
+    "Eve": {"Saturday", "Sunday"},
+    "Frank": set(),
+}
+
+assignments = [
+    ("Alice", "Monday", "early"),
+    ("Ben", "Monday", "early"),
+    ("Cara", "Monday", "late"),
+    ("Eve", "Monday", "late"),
+    ("Alice", "Monday", "late"),
+    ("Dan", "Monday", "late"),
+    ("Eve", "Saturday", "late"),
+]
+
+REQUIRED_STAFF = 2
+
+
+def count_assignments(assignments, target_day, target_shift):
+    count = 0
+    for _, day, shift in assignments:
+        if day == target_day and shift == target_shift:
+            count += 1
+    return count
+
+def check_coverage(assignments, target_day, target_shift):
+    assigned_staff = count_assignments(assignments, target_day, target_shift)
+    if assigned_staff != REQUIRED_STAFF:
+        return (
+            f"{target_day} {target_shift} requires "
+            f"{REQUIRED_STAFF} employees but has {assigned_staff}."
+        )
+    return
+
+def find_coverage_violations(assignments, days, shifts):
+    violations = []
+    for day in days:
+        for shift in shifts:
+            violation = check_coverage(assignments, day, shift)
+            if violation:
+                violations.append(violation)
+    return violations
+
+
+def count_employee_day_assignments(assignments, target_employee, target_day):
+    count = 0
+    for assignment in assignments:
+        if assignment[0] == target_employee and assignment[1] == target_day:
+            count += 1
+    return count
+
+def find_employee_day_violations(assignments, employees, days):
+    violations = []
+
+    for employee in employees:
+        for day in days:
+            count = count_employee_day_assignments(
+                assignments, employee, day
+                )
+            
+            if count > 1:
+                violation = (
+                    f"{employee} is assigned to {count} shifts on {day}"
+                )
+                violations.append(violation)
+                    
+    return violations
+
+
+
+
+def check_assignment_availability(assignment, unavailable):
+    employee, day, shift = assignment
+
+    if day in unavailable[employee]:
+        return (
+            f"{employee} is unavailable on {day} but is assigned to the {shift}"
+            f" shift."
+        )
+    return None
+
+def find_availability_violations(assignments, unavailable):
+    violations = []
+    for assignment in assignments:
+        violation = check_assignment_availability(assignment, unavailable)
+        if violation:
+            violations.append(violation)
+    return violations
+
+
+
+def validate_rota(assignments, employees, days, shifts, unavailable):
+    coverage_violations = find_coverage_violations(assignments, days, shifts)
+    employee_day_violations = find_employee_day_violations(
+        assignments, employees, days
+        )
+    availability_violations = find_availability_violations(
+        assignments, unavailable
+        )
+    
+    return {
+        "coverage": coverage_violations,
+        "employee_days": employee_day_violations,
+        "availability": availability_violations,
+    }
+
+
+if __name__ == "__main__":
+    violations = validate_rota(assignments, employees, days, shifts, unavailable)
+    for violation_type, problems in violations.items():
+        print(f"\n{violation_type}:")
+
+        if problems:
+            for problem in problems:
+                print(f"- {problem}")
+        else:
+            print("- No violations")
