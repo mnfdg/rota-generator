@@ -44,15 +44,20 @@ assignments = [
 
 REQUIRED_STAFF = 2
 
+# Functions to check shift staff numbers
+def count_assignments(assignments, target_day, target_shift) -> int:
+    """Count staff assigned to a given shift on a given day."""
 
-def count_assignments(assignments, target_day, target_shift):
     count = 0
     for _, day, shift in assignments:
         if day == target_day and shift == target_shift:
             count += 1
     return count
 
-def check_coverage(assignments, target_day, target_shift):
+def check_coverage(assignments, target_day, target_shift) -> str | None:
+    """Return a warning if staff numbers for a given shift on a given day differ
+    from the required number."""
+
     assigned_staff = count_assignments(assignments, target_day, target_shift)
     if assigned_staff != REQUIRED_STAFF:
         return (
@@ -61,7 +66,10 @@ def check_coverage(assignments, target_day, target_shift):
         )
     return
 
-def find_coverage_violations(assignments, days, shifts):
+def find_coverage_violations(assignments, days, shifts) -> list:
+    """Return a list of shifts where staff numbers differ from required 
+    numbers."""
+
     violations = []
     for day in days:
         for shift in shifts:
@@ -70,15 +78,19 @@ def find_coverage_violations(assignments, days, shifts):
                 violations.append(violation)
     return violations
 
-
-def count_employee_day_assignments(assignments, target_employee, target_day):
+# Functions to check staff are not assigned multiple shifts on one day
+def count_employee_day_assignments(
+        assignments, target_employee, target_day) -> int:
+    """Return number of shifts assigned to a given employee on a given day."""
     count = 0
     for assignment in assignments:
         if assignment[0] == target_employee and assignment[1] == target_day:
             count += 1
     return count
 
-def find_employee_day_violations(assignments, employees, days):
+def find_employee_day_violations(assignments, employees, days) -> list:
+    """Return list of warnings where staff are assigned multiple shifts on
+    the same day."""
     violations = []
 
     for employee in employees:
@@ -95,10 +107,10 @@ def find_employee_day_violations(assignments, employees, days):
                     
     return violations
 
-
-
-
-def check_assignment_availability(assignment, unavailable):
+# Functions to check staff unavailability is accounted for
+def check_assignment_availability(assignment, unavailable) -> str | None:
+    """Return a warning if a given assignment is on one of the staff member's 
+    unavailable days."""
     employee, day, shift = assignment
 
     if day in unavailable[employee]:
@@ -108,7 +120,10 @@ def check_assignment_availability(assignment, unavailable):
         )
     return None
 
-def find_availability_violations(assignments, unavailable):
+def find_availability_violations(assignments, unavailable) -> list:
+    """Takes a list of assignments and a dictionary of staff members'
+    unavailable days, returns a list of warnings for assignments where someone
+    has been assigned to a day they are not available."""
     violations = []
     for assignment in assignments:
         violation = check_assignment_availability(assignment, unavailable)
@@ -117,8 +132,10 @@ def find_availability_violations(assignments, unavailable):
     return violations
 
 
-
-def validate_rota(assignments, employees, days, shifts, unavailable):
+# Function to run all checks on a rota
+def validate_rota(assignments, employees, days, shifts, unavailable) -> dict:
+    """Returns a dictionary of warnings from checks of coverage, staff only
+    assigned to one shift per day, and staffs' unavailable days."""
     coverage_violations = find_coverage_violations(assignments, days, shifts)
     employee_day_violations = find_employee_day_violations(
         assignments, employees, days
