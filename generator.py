@@ -9,14 +9,19 @@ from rota import (
     validate_rota
 )
 
+Assignment = tuple[str, str, str]
 
 def generate_rota(
-    employees,
-    days,
-    shifts,
-    unavailable,
-    required_staff,
-):  
+    employees: list[str],
+    days: list[str],
+    shifts: list[str],
+    unavailable: dict[str, set[str]],
+    required_staff: int,
+) -> list[Assignment] | None:  
+    """Generate a rota satisfying the Version 0.2 hard constraints.
+
+    Return the generated assignments, or None if no feasible rota exists.
+    """
     model = cp_model.CpModel()
 
     assign = {}
