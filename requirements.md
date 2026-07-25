@@ -55,3 +55,27 @@ Version 0.2 does not yet consider:
 - fairness
 - night-shift patterns
 - multiple locations or qualifications
+
+# Version 0.3 Requirements
+
+## Goal
+Account for different shift durations and employee-specific contracted
+working hours across the full rota period.
+
+## Workload
+Each shift has a duration in hours.
+
+Each employee has a target average number of hours per week. Their required
+hours for the rota are calculated across the whole planning period rather
+than enforced separately for each calendar week.
+
+Employees may work different numbers of hours in individual weeks, provided
+their total workload remains within the permitted range for the full rota.
+
+## Not included
+Version 0.3 does not yet consider:
+- employee preferences for clustered or spread-out shifts
+- maximum consecutive working days
+- minimum blocks of days off
+- night-shift recovery
+- fairness or optimisation
