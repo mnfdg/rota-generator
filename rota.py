@@ -20,7 +20,14 @@ days = [
 shifts = [
     "early",
     "late",
+    #"long day",
 ]
+
+shift_hours = {
+    "early": 8,
+    "late": 10,
+    #"long day": 10,
+}
 
 # Record "unavailable" days, as these should be fewer than "available" days.
 unavailable = {
@@ -30,6 +37,15 @@ unavailable = {
     "Dan": {"Monday"},
     "Eve": {"Saturday", "Sunday"},
     "Frank": set(),
+}
+
+workload_limits = {
+    "Alice": {"minimum": 32, "maximum": 50},
+    "Ben": {"minimum": 32, "maximum": 50},
+    "Cara": {"minimum": 32, "maximum": 50},
+    "Dan": {"minimum": 32, "maximum": 50},
+    "Eve": {"minimum": 32, "maximum": 50},
+    "Frank": {"minimum": 32, "maximum": 50},
 }
 
 assignments = [
@@ -132,8 +148,71 @@ def find_availability_violations(assignments, unavailable) -> list:
     return violations
 
 
+# Functions to check if employees are rota'd an appropriate number of hours
+def calculate_employee_hours(
+    assignments,
+    target_employee,
+    shift_hours,
+):
+    total_hours = 0
+
+    for employee, _, shift in assignments:
+        if employee == target_employee:
+            total_hours += shift_hours[shift]
+
+    return total_hours
+
+def check_employee_workload(
+    assignments,
+    target_employee,
+    shift_hours,
+    workload_limits,
+):
+    assigned_hours = calculate_employee_hours(
+        assignments,
+        target_employee,
+        shift_hours,
+    )
+
+    minimum_hours = workload_limits[target_employee]["minimum"]
+    maximum_hours = workload_limits[target_employee]["maximum"]
+
+    # Return a violation if assigned_hours is below the minimum.
+    if assigned_hours < minimum_hours:
+        violation = f"{target_employee} should work at least {minimum_hours}"\
+            f" hours but is working only {assigned_hours} hours."
+        return violation
+    # Return a different violation if it is above the maximum.
+    if assigned_hours > maximum_hours:
+        violation = f"{target_employee} should work at most {maximum_hours}"\
+            f" hours but is working {assigned_hours} hours."
+        return violation
+    # Otherwise return None
+    return None
+
+def find_workload_violations(
+        assignments,
+        employees,
+        shift_hours,
+        workload_limits
+):
+    violations = []
+
+    for employee in employees:
+        violation = check_employee_workload(
+            assignments, employee, shift_hours, workload_limits
+            )
+
+        if violation:
+            violations.append(violation)
+
+    return violations
+
+
 # Function to run all checks on a rota
-def validate_rota(assignments, employees, days, shifts, unavailable) -> dict:
+def validate_rota(
+        assignments, employees, days, shifts, unavailable, shift_hours, 
+        workload_limits) -> dict:
     """Returns a dictionary of warnings from checks of coverage, staff only
     assigned to one shift per day, and staffs' unavailable days."""
     coverage_violations = find_coverage_violations(assignments, days, shifts)
@@ -143,16 +222,23 @@ def validate_rota(assignments, employees, days, shifts, unavailable) -> dict:
     availability_violations = find_availability_violations(
         assignments, unavailable
         )
+    workload_violations = find_workload_violations(
+        assignments, employees, shift_hours, workload_limits)
     
     return {
         "coverage": coverage_violations,
         "employee_days": employee_day_violations,
         "availability": availability_violations,
+        "workload" : workload_violations
     }
 
 
+
+
+
 if __name__ == "__main__":
-    violations = validate_rota(assignments, employees, days, shifts, unavailable)
+    violations = validate_rota(assignments, employees, days, shifts, unavailable,
+                               shift_hours, workload_limits)
     for violation_type, problems in violations.items():
         print(f"\n{violation_type}:")
 
