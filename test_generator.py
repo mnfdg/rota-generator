@@ -6,6 +6,13 @@ def test_generated_rota_passes_validation():
     employees = ["Alice", "Ben", "Cara", "Dan"]
     days = ["Monday"]
     shifts = ["early", "late"]
+    shift_hours = {"early": 8,"late": 10,}
+    workload_limits = {
+        "Alice": {"minimum": 8, "maximum": 10},
+        "Ben": {"minimum": 8, "maximum": 10},
+        "Cara": {"minimum": 8, "maximum": 10},
+        "Dan": {"minimum": 8, "maximum": 10},
+    }
 
     unavailable = {
         "Alice": set(),
@@ -19,8 +26,10 @@ def test_generated_rota_passes_validation():
         days,
         shifts,
         unavailable,
-        required_staff=2,
-    )
+        required_staff=2, #required_staff
+        shift_hours=shift_hours,
+        workload_limits=workload_limits
+        )
 
     assert generated_assignments is not None
 
@@ -30,12 +39,15 @@ def test_generated_rota_passes_validation():
         days,
         shifts,
         unavailable,
+        shift_hours,
+        workload_limits
     )
 
     assert violations == {
         "coverage": [],
         "employee_days": [],
         "availability": [],
+        "workload": [],
     }
 
 
@@ -43,6 +55,10 @@ def test_impossible_rota_returns_none():
     employees = ["Alice"]
     days = ["Monday"]
     shifts = ["early", "late"]
+    shift_hours = {"early": 8,"late": 10,}
+    workload_limits = {
+        "Alice": {"minimum": 8, "maximum": 10},
+    }
 
     unavailable = {
         "Alice": set(),
@@ -54,6 +70,8 @@ def test_impossible_rota_returns_none():
         shifts,
         unavailable,
         required_staff=2,
+        shift_hours=shift_hours,
+        workload_limits=workload_limits
     )
 
     assert generated_assignments is None

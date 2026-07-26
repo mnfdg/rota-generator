@@ -6,7 +6,9 @@ from rota import (
     employees,
     shifts,
     unavailable,
-    validate_rota
+    shift_hours,
+    workload_limits,
+    validate_rota,
 )
 
 Assignment = tuple[str, str, str]
@@ -17,8 +19,10 @@ def generate_rota(
     shifts: list[str],
     unavailable: dict[str, set[str]],
     required_staff: int,
+    shift_hours,
+    workload_limits
 ) -> list[Assignment] | None:  
-    """Generate a rota satisfying the Version 0.2 hard constraints.
+    """Generate a rota satisfying the Version 0.3 hard constraints.
 
     Return the generated assignments, or None if no feasible rota exists.
     """
@@ -69,6 +73,20 @@ def generate_rota(
                     assign[employee, unavailable_day, shift] == 0
                 )
 
+    # Add solver constraint: Staff must work within allowed range of hours
+    for employee in employees:
+        assigned_hours = sum(
+            assign[employee, day, shift] * shift_hours[shift]
+            for day in days
+            for shift in shifts
+        )
+
+        minimum_hours = workload_limits[employee]["minimum"]
+        maximum_hours = workload_limits[employee]["maximum"]
+
+        model.add(assigned_hours >= minimum_hours)
+        model.add(assigned_hours <= maximum_hours)
+
     solver = cp_model.CpSolver()    # Create solver
     status = solver.solve(model)    # Find values for the Boolean variables
 
@@ -93,6 +111,8 @@ if __name__ == "__main__":
         shifts,
         unavailable,
         REQUIRED_STAFF,
+        shift_hours,
+        workload_limits
     )
 
     if generated_assignments is None:
@@ -104,6 +124,8 @@ if __name__ == "__main__":
             days,
             shifts,
             unavailable,
+            shift_hours,
+            workload_limits
         )
 
         for assignment in generated_assignments:

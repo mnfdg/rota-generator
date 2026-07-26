@@ -4,6 +4,9 @@ from rota import (
     count_assignments,
     count_employee_day_assignments,
     find_employee_day_violations,
+    calculate_employee_hours,
+    check_employee_workload,
+    find_workload_violations,
     validate_rota,
 )
 
@@ -119,16 +122,169 @@ def test_valid_rota_has_no_violations():
         "Dan": set(),
     }
 
+    shift_hours = {
+        "early": 8,
+        "late": 10,
+        #"long day": 10,
+    }   
+
+    workload_limits = {
+        "Alice": {"minimum": 8, "maximum": 10},
+        "Ben": {"minimum": 8, "maximum": 10},
+        "Cara": {"minimum": 8, "maximum": 10},
+        "Dan": {"minimum": 8, "maximum": 10},
+    }
+
+
     result = validate_rota(
         assignments,
         employees,
         days,
         shifts,
         unavailable,
+        shift_hours,
+        workload_limits
     )
 
     assert result == {
         "coverage": [],
         "employee_days": [],
         "availability": [],
+        "workload": [],
     }
+
+
+def test_calculate_employee_hours():
+    assignments = [
+        ("Alice", "Monday", "early"),
+        ("Alice", "Tuesday", "late"),
+        ("Ben", "Monday", "early"),
+    ]
+
+    shift_hours = {
+        "early": 8,
+        "late": 10,
+    }
+
+    result = calculate_employee_hours(
+        assignments,
+        "Alice",
+        shift_hours,
+    )
+
+    assert result == 18
+
+def test_workload_in_permitted_range_returns_None():
+    assignments = [
+        ("Alice", "Monday", "early"),
+        ("Alice", "Tuesday", "late"),
+        ("Ben", "Monday", "early"),
+    ]
+
+    shift_hours = {
+        "early": 8,
+        "late": 10,
+    }
+
+    workload_limits = {
+        "Alice": {"minimum": 16, "maximum": 20},
+    }
+
+    result = check_employee_workload(
+        assignments,
+        "Alice",
+        shift_hours,
+        workload_limits
+    )
+
+    assert result == None
+
+
+
+def test_workload_below_permitted_range_returns_violation():
+    assignments = [
+        ("Alice", "Monday", "early"),
+        ("Ben", "Monday", "early"),
+    ]
+
+    shift_hours = {
+        "early": 8,
+        "late": 10,
+    }
+
+    workload_limits = {
+        "Alice": {"minimum": 16, "maximum": 20},
+    }
+
+    result = check_employee_workload(
+        assignments,
+        "Alice",
+        shift_hours,
+        workload_limits
+    )
+
+    assert result == "Alice should work at least 16 hours but is working only 8 hours."
+
+
+
+def test_workload_above_permitted_range_returns_violation():
+    assignments = [
+        ("Alice", "Monday", "early"),
+        ("Alice", "Tuesday", "early"),
+        ("Alice", "Wednesday", "late"),
+        ("Ben", "Monday", "early"),
+    ]
+
+    shift_hours = {
+        "early": 8,
+        "late": 10,
+    }
+
+    workload_limits = {
+        "Alice": {"minimum": 16, "maximum": 20},
+    }
+
+    result = check_employee_workload(
+        assignments,
+        "Alice",
+        shift_hours,
+        workload_limits
+    )
+
+    assert result == "Alice should work at most 20 hours but is working 26 hours."
+
+
+def test_find_workload_violations():
+    assignments = [
+        ("Alice", "Monday", "early"),
+        ("Ben", "Monday", "early"),
+        ("Ben", "Tuesday", "late"),
+        ("Cara", "Monday", "late"),
+        ("Cara", "Tuesday", "late"),
+        ("Cara", "Wednesday", "late"),
+    ]
+
+    employees = ["Alice", "Ben", "Cara"]
+
+    shift_hours = {
+        "early": 8,
+        "late": 10,
+    }
+
+    workload_limits = {
+        "Alice": {"minimum": 16, "maximum": 20},
+        "Ben": {"minimum": 16, "maximum": 20},
+        "Cara": {"minimum": 16, "maximum": 20},
+    }
+
+    result = find_workload_violations(
+        assignments,
+        employees,
+        shift_hours,
+        workload_limits,
+    )
+
+    assert result == [
+        "Alice should work at least 16 hours but is working only 8 hours.",
+        "Cara should work at most 20 hours but is working 30 hours."
+    ]
