@@ -13,6 +13,12 @@ def test_generated_rota_passes_validation():
         "Cara": {"minimum": 8, "maximum": 10},
         "Dan": {"minimum": 8, "maximum": 10},
     }
+    max_consecutive_days = {
+        "Alice": 5,
+        "Ben": 5,
+        "Cara": 5,
+        "Dan": 5,
+    }
 
     unavailable = {
         "Alice": set(),
@@ -28,7 +34,8 @@ def test_generated_rota_passes_validation():
         unavailable,
         required_staff=2, #required_staff
         shift_hours=shift_hours,
-        workload_limits=workload_limits
+        workload_limits=workload_limits,
+        max_consecutive_days=max_consecutive_days,
         )
 
     assert generated_assignments is not None
@@ -40,7 +47,8 @@ def test_generated_rota_passes_validation():
         shifts,
         unavailable,
         shift_hours,
-        workload_limits
+        workload_limits,
+        max_consecutive_days,
     )
 
     assert violations == {
@@ -48,6 +56,7 @@ def test_generated_rota_passes_validation():
         "employee_days": [],
         "availability": [],
         "workload": [],
+        "working_runs": [],
     }
 
 
@@ -63,6 +72,7 @@ def test_impossible_rota_returns_none():
     unavailable = {
         "Alice": set(),
     }
+    max_consecutive_days = {"Alice":3,}
 
     generated_assignments = generate_rota(
         employees,
@@ -71,7 +81,42 @@ def test_impossible_rota_returns_none():
         unavailable,
         required_staff=2,
         shift_hours=shift_hours,
-        workload_limits=workload_limits
+        workload_limits=workload_limits,
+        max_consecutive_days=max_consecutive_days,
+    )
+
+    assert generated_assignments is None
+
+def test_impossible_consecutive_days_returns_none():
+    employees = ["Alice"]
+    days = ["Monday", "Tuesday", "Wednesday"]
+    shifts = ["early"]
+
+    unavailable = {
+        "Alice": set(),
+    }
+
+    shift_hours = {
+        "early": 8,
+    }
+
+    workload_limits = {
+        "Alice": {"minimum": 0, "maximum": 24},
+    }
+
+    max_consecutive_days = {
+        "Alice": 2,
+    }
+
+    generated_assignments = generate_rota(
+        employees,
+        days,
+        shifts,
+        unavailable,
+        required_staff=1,
+        shift_hours=shift_hours,
+        workload_limits=workload_limits,
+        max_consecutive_days=max_consecutive_days,
     )
 
     assert generated_assignments is None

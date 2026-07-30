@@ -7,6 +7,10 @@ from rota import (
     calculate_employee_hours,
     check_employee_workload,
     find_workload_violations,
+    employee_works_on_day,
+    find_longest_working_run,
+    check_employee_working_run,
+    find_working_run_violations,
     validate_rota,
 )
 
@@ -135,6 +139,8 @@ def test_valid_rota_has_no_violations():
         "Dan": {"minimum": 8, "maximum": 10},
     }
 
+    max_consecutive_days = {'Alice':2,'Ben':5, 'Cara':7, 'Dan':8}
+
 
     result = validate_rota(
         assignments,
@@ -143,7 +149,8 @@ def test_valid_rota_has_no_violations():
         shifts,
         unavailable,
         shift_hours,
-        workload_limits
+        workload_limits,
+        max_consecutive_days
     )
 
     assert result == {
@@ -151,8 +158,8 @@ def test_valid_rota_has_no_violations():
         "employee_days": [],
         "availability": [],
         "workload": [],
+        "working_runs": [],
     }
-
 
 def test_calculate_employee_hours():
     assignments = [
@@ -199,8 +206,6 @@ def test_workload_in_permitted_range_returns_None():
 
     assert result == None
 
-
-
 def test_workload_below_permitted_range_returns_violation():
     assignments = [
         ("Alice", "Monday", "early"),
@@ -224,8 +229,6 @@ def test_workload_below_permitted_range_returns_violation():
     )
 
     assert result == "Alice should work at least 16 hours but is working only 8 hours."
-
-
 
 def test_workload_above_permitted_range_returns_violation():
     assignments = [
@@ -252,7 +255,6 @@ def test_workload_above_permitted_range_returns_violation():
     )
 
     assert result == "Alice should work at most 20 hours but is working 26 hours."
-
 
 def test_find_workload_violations():
     assignments = [
@@ -288,3 +290,121 @@ def test_find_workload_violations():
         "Alice should work at least 16 hours but is working only 8 hours.",
         "Cara should work at most 20 hours but is working 30 hours."
     ]
+
+def test_employee_works_on_day_returns_true():
+    assignments = [("Alice", "Monday", "early"),]
+    target_employee = "Alice"
+    target_day = "Monday"
+
+    assert employee_works_on_day(
+        assignments, target_employee, target_day
+        ) == True
+
+def test_employee_works_on_day_returns_false():
+    assignments = [("Alice", "Monday", "early"),]
+    target_employee = "Alice"
+    target_day = "Tuesday"
+
+    assert employee_works_on_day(
+        assignments, target_employee, target_day
+        ) == False
+
+def test_longest_working_run_returns_correct_number():
+    assignments = [
+        ("Alice", "Monday", "early"),
+        ("Alice", "Tuesday", "late"),
+        ("Alice", "Thursday", "early"),
+        ("Alice", "Friday", "early"),
+        ("Alice", "Saturday", "late"),
+    ]
+
+    days = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+    ]
+
+    assert find_longest_working_run(
+        assignments,
+        "Alice",
+        days,
+    ) == 3
+
+def test_longest_working_run_returns_zero_when_employee_never_works():
+    assignments = [
+        ("Ben", "Monday", "early"),
+    ]
+
+    days = ["Monday", "Tuesday"]
+
+    assert find_longest_working_run(
+        assignments,
+        "Alice",
+        days,
+    ) == 0
+
+def test_working_run_within_limit_returns_none():
+    assignments = [
+        ("Brian", "Monday", "early"),
+        ("Brian", "Tuesday", "early"),
+        ("Brian", "Wednesday", "early"),
+    ]
+
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday"]
+
+    max_consecutive_days = {"Brian": 3,}
+
+    result = check_employee_working_run(
+        assignments,
+        "Brian",
+        days,
+        max_consecutive_days
+    )
+
+    assert result == None
+
+def test_working_run_above_limit_returns_warning():
+    assignments = [
+        ("Brian", "Monday", "early"),
+        ("Brian", "Tuesday", "early"),
+        ("Brian", "Wednesday", "early"),
+    ]
+
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday"]
+
+    max_consecutive_days = {"Brian": 2,}
+
+    result = check_employee_working_run(
+        assignments,
+        "Brian",
+        days,
+        max_consecutive_days
+    )
+
+    assert result == "Brian works 3 consecutive days but may work at most 2."
+
+def test_working_run_violations():
+    max_consecutive_days = {
+        "Alice": 2,
+        "Ben": 3,
+    }
+
+    days = ["2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31"]
+
+    assignments = [
+        ("Alice", "2026-07-28", "A&E Early"),
+        ("Alice", "2026-07-29", "A&E Early"),
+        ("Alice", "2026-07-30", "A&E Early"),
+    ]
+
+    employees = ["Alice", "Ben"]
+
+    result = find_working_run_violations(
+        assignments, employees, days, max_consecutive_days
+        )
+
+    assert result == ["Alice works 3 consecutive days but may work at most 2."]

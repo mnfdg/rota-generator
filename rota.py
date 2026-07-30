@@ -58,6 +58,15 @@ assignments = [
     ("Eve", "Saturday", "late"),
 ]
 
+max_consecutive_days = {
+        "Alice": 2,
+        "Ben": 3,
+        "Cara": 5,
+        "Dan": 8,
+        "Eve": 5,
+        "Frank": 7,
+    }
+
 REQUIRED_STAFF = 2
 
 # Functions to check shift staff numbers
@@ -209,10 +218,93 @@ def find_workload_violations(
     return violations
 
 
+
+# Allow each employee to have an individual maximum number of consecutive
+# working days.
+
+# Check if a given employee is working on a given day
+def employee_works_on_day(
+    assignments,
+    target_employee,
+    target_day,
+):
+    for employee, day, _ in assignments:
+        if employee == target_employee and day == target_day:
+            return True
+
+    return False
+
+# Find the longest run of days a given employee is working
+def find_longest_working_run(
+    assignments,
+    target_employee,
+    days,
+):
+    current_run = 0
+    longest_run = 0
+
+    for day in days:
+        if employee_works_on_day(
+            assignments,
+            target_employee,
+            day,
+        ):
+            current_run += 1
+            if current_run > longest_run:
+                longest_run = current_run
+        else:
+            current_run = 0
+
+    return longest_run
+
+# Return a warning if a given employee is working a run longer than their maximum
+def check_employee_working_run(
+    assignments,
+    target_employee,
+    days,
+    max_consecutive_days,
+):
+    longest_run = find_longest_working_run(
+        assignments,
+        target_employee,
+        days,
+    )
+
+    maximum_allowed = max_consecutive_days[target_employee]
+
+    if longest_run > maximum_allowed:
+        return (
+            f"{target_employee} works {longest_run} consecutive days but may "
+            f"work at most {maximum_allowed}."
+        )
+
+    return None
+
+# Find all working run violations in a list of assignments
+def find_working_run_violations(
+        assignments,
+        employees,
+        days,
+        max_consecutive_days
+):
+    violations = []
+
+    for employee in employees:
+        violation = check_employee_working_run(
+            assignments, employee, days, max_consecutive_days
+            )
+
+        if violation:
+            violations.append(violation)
+
+    return violations
+
+
+
 # Function to run all checks on a rota
 def validate_rota(
         assignments, employees, days, shifts, unavailable, shift_hours, 
-        workload_limits) -> dict:
+        workload_limits, max_consecutive_days) -> dict:
     """Returns a dictionary of warnings from checks of coverage, staff only
     assigned to one shift per day, and staffs' unavailable days."""
     coverage_violations = find_coverage_violations(assignments, days, shifts)
@@ -224,12 +316,17 @@ def validate_rota(
         )
     workload_violations = find_workload_violations(
         assignments, employees, shift_hours, workload_limits)
+
+    working_run_violations = find_working_run_violations(
+        assignments, employees, days, max_consecutive_days)
+        
     
     return {
         "coverage": coverage_violations,
         "employee_days": employee_day_violations,
         "availability": availability_violations,
-        "workload" : workload_violations
+        "workload" : workload_violations,
+        "working_runs": working_run_violations,
     }
 
 
@@ -238,7 +335,8 @@ def validate_rota(
 
 if __name__ == "__main__":
     violations = validate_rota(assignments, employees, days, shifts, unavailable,
-                               shift_hours, workload_limits)
+                               shift_hours, workload_limits, 
+                               max_consecutive_days)
     for violation_type, problems in violations.items():
         print(f"\n{violation_type}:")
 
