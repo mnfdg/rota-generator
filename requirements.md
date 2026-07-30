@@ -79,3 +79,18 @@ Version 0.3 does not yet consider:
 - minimum blocks of days off
 - night-shift recovery
 - fairness or optimisation
+
+# Version 0.4 Requirements
+
+## Goal
+Allow each employee to have an individual maximum number of consecutive
+working days.
+
+## Rule
+An employee must not be assigned to more than their permitted number of consecutive working days.
+
+An employee counts as working on a day if they are assigned to any shift on that day.
+
+## Scope
+This is a hard constraint.
+Version 0.4 does not yet try to satisfy preferences for clustered shifts, long blocks of days off, or evenly spread work.

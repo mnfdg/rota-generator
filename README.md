@@ -5,15 +5,16 @@ programming with Google OR-Tools.
 
 ## Current functionality
 
-Version 0.3 can:
+This version can:
 
 - validate manually supplied rotas;
 - generate a feasible rota;
-- enforce shift coverage;
+- enforce uniform shift coverage;
 - assign to shifts with different lengths;
 - prevent multiple shifts per employee per day;
 - respect unavailable days;
 - respect workers' different workload ranges;
+- respect workers' individual preferences for working run lengths;
 - report when no feasible rota exists.
 
 ## Run the generator
