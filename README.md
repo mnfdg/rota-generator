@@ -6,7 +6,7 @@ The aim is ultimately to generate rotas that satisfy the complex shift patterns 
 
 ## Current functionality
 
-The current version can:
+This version can:
 
 - validate manually supplied rotas;
 - generate a feasible rota;

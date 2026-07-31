@@ -8,6 +8,7 @@ from rota import (
     unavailable,
     shift_hours,
     workload_limits,
+    max_consecutive_days,
     validate_rota,
 )
 
@@ -20,7 +21,8 @@ def generate_rota(
     unavailable: dict[str, set[str]],
     required_staff: int,
     shift_hours,
-    workload_limits
+    workload_limits,
+    max_consecutive_days
 ) -> list[Assignment] | None:  
     """Generate a rota satisfying the Version 0.3 hard constraints.
 
@@ -87,6 +89,24 @@ def generate_rota(
         model.add(assigned_hours >= minimum_hours)
         model.add(assigned_hours <= maximum_hours)
 
+    # Add solver constraint: Staff cannot exceed their maximum number
+    # of consecutive working days
+    for employee in employees:
+        maximum = max_consecutive_days[employee]
+        window_length = maximum + 1
+
+        for start in range(len(days) - window_length + 1):
+            window_days = days[start:start + window_length]
+
+            model.add(
+                sum(
+                    assign[employee, day, shift]
+                    for day in window_days
+                    for shift in shifts
+                )
+                <= maximum
+            )
+
     solver = cp_model.CpSolver()    # Create solver
     status = solver.solve(model)    # Find values for the Boolean variables
 
@@ -112,7 +132,8 @@ if __name__ == "__main__":
         unavailable,
         REQUIRED_STAFF,
         shift_hours,
-        workload_limits
+        workload_limits,
+        max_consecutive_days,
     )
 
     if generated_assignments is None:
@@ -125,7 +146,8 @@ if __name__ == "__main__":
             shifts,
             unavailable,
             shift_hours,
-            workload_limits
+            workload_limits,
+            max_consecutive_days
         )
 
         for assignment in generated_assignments:
